@@ -70,6 +70,10 @@ main()
 	 * answer and a hint of how big that buffer is).
 	 *
 	 * SIOCGIFCONF returns a list  of interface (transport layer) addresses.
+	 *
+	 * There are two problems with using this:
+	 *      1. we can only retrieve IPv4 stuff;
+	 *      2. we can't retrieve non-ip assigned interfaces.
 	 */
 	err = ioctl(devices_fd, SIOCGIFCONF, (char*)&config);
 	if (err == -1) {
@@ -82,7 +86,6 @@ main()
 	 * Parse the results and then print the interfaces names.
 	 */
 	number_of_ifaces = config.ifc_len / (sizeof(struct ifreq));
-
 	for (int i = 0; i < number_of_ifaces; i++) {
 		printf("iface: %s\n", ifreq[i].ifr_name);
 
