@@ -1,4 +1,6 @@
+#include <arpa/inet.h>
 #include <linux/if.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -23,6 +25,18 @@ main()
 	 * about the interfaces.
 	 */
 	struct ifreq ifreq[MAX_INTERFACES];
+
+	/**
+	 * A temporary buffer for holding the humanized string that
+	 * represents the address assigned to that interface.
+	 */
+	char ip_buffer[16] = { 0 };
+
+	/**
+	 * A `sockaddr` address structure casted to the internet form
+	 * `sockaddr_in` as retrieved from `ioctl`.
+	 */
+	struct sockaddr_in* iface_addr;
 
 	int devices_fd;
 	int number_of_ifaces;
@@ -59,7 +73,7 @@ main()
 	 */
 	err = ioctl(devices_fd, SIOCGIFCONF, (char*)&config);
 	if (err == -1) {
-		perror("ioctl failed\n");
+		perror("ioctl SIOCGIFCONF failed\n");
 		close(devices_fd);
 		return 2;
 	}
@@ -68,8 +82,29 @@ main()
 	 * Parse the results and then print the interfaces names.
 	 */
 	number_of_ifaces = config.ifc_len / (sizeof(struct ifreq));
+
 	for (int i = 0; i < number_of_ifaces; i++) {
 		printf("iface: %s\n", ifreq[i].ifr_name);
+
+		/**
+		 * Retrieve the address of the specified interface
+		 * by making use of SIOCGIFADDR ioctl using the ifreq
+		 * of the current interface in the loop as the argument
+		 * for the call such that we can retrieve the address for
+		 * the right interface.
+		 */
+		err = ioctl(devices_fd, SIOCGIFADDR, (char*)&ifreq[i]);
+		if (err == -1) {
+			perror("ioctl failed\n");
+			close(devices_fd);
+			return 2;
+		}
+
+		iface_addr = (struct sockaddr_in*)(&ifreq[i].ifr_addr);
+		inet_ntop(AF_INET, &iface_addr->sin_addr, ip_buffer, 16);
+
+		printf("ip: %s\n", ip_buffer);
+		printf("\n");
 	}
 
 	close(devices_fd);
