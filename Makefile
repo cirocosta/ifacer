@@ -1,7 +1,7 @@
 # Builds main binary responsible for running
 # the HSTATIC server (`./hstatic.out`).
 build: ./main.c
-	gcc -O2 -Wall $^ -o ./main.out
+	gcc -O2 -static -Wall $^ -o ./main.out
 
 
 # Formats any C-related file using the clang-format
