@@ -1,3 +1,46 @@
+/**
+ * ifacer - retrieves a list of interfaces that have IPV4 addresses
+ *          associated with them.
+ *
+ * This program makes use of the `ioctl(2)` syscall to gather information
+ * about available network interfaces that have IPV4 addresses bound to
+ * them by specifying a very specific request code to the syscall -
+ * SIOCFGIFCONF.
+ *
+ * When doing so, we're able to have a configuration struct (`struct ifconf`)
+ * filled with an array of network interface structs (`struct ifreq`) that
+ * allows us to tell their addresses as well as known the number of interfaces
+ * available.
+ *
+ * Given that `struct ifreq` does not give us the name associated with such
+ * interface, we issue a second `ioctl(2)` syscall to gather the name of each
+ * interface, now using the SIOCGIFNAME request code.
+ *
+ * While this method of retrieving interfaces work for IPv4 and allows us to
+ * know the address, some configuration and their name, it doesn't allow us to
+ * retrieve metrics from them. It's also not able to list interfaces that have
+ * IPv6 addresses.
+ *
+ * To know more about the `ioctl(2)` syscall and their requests codes, make sure
+ * you check the following:
+ *
+ *   - man 2 ioctl              : to known more about ioctl;
+ *   - man 2 ioctl_list         : to known about all possible request codes to
+ * use; and
+ *   - man 7 netdevice          : to gather info about the specifics of network
+ * devices configuration (here you can know more about the structs mentioned and
+ * the request codes used).
+ *
+ * To compile the code:
+ *
+ *      gcc -O2 ./main.c -o ifacer
+ *
+ *
+ * To run:
+ *
+ *      ./ifacer
+ */
+
 #include <arpa/inet.h>
 #include <linux/if.h>
 #include <netinet/in.h>
@@ -11,11 +54,10 @@
 int
 main()
 {
-
 	/**
-	 * A zero-initialized structure that holds the coniguration
+	 * A zero-initialized structure that holds the configuration
 	 * parameters for the SIOCGIFCONF IOCTL that we issue against
-	 * a socket to retrieve a list of network interfaces that have
+	 * a socket to retrieve the list of network interfaces that have
 	 * an underlying IP associated with it.
 	 */
 	struct ifconf config = { 0 };
